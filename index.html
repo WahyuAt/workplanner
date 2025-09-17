@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Planner Tim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #fff;
+        }
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #fff;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.5em;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-1px);
+        }
+        .btn-export {
+            background-color: #10b981;
+            color: #fff;
+        }
+        .btn-export:hover {
+            background-color: #047857;
+            transform: translateY(-1px);
+        }
+        .btn-delete {
+            background-color: #ef4444;
+            color: #fff;
+        }
+        .btn-delete:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        .table-header th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #4b5563;
+            background-color: #e5e7eb;
+        }
+        .table-row td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-planning { background-color: #fcd34d; color: #78350f; }
+        .badge-on-progress { background-color: #60a5fa; color: #1e40af; }
+        .badge-done { background-color: #4ade80; color: #166534; }
+        .badge-cancel { background-color: #f87171; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="container mx-auto bg-white shadow-xl rounded-2xl p-8">
+        <h1 class="text-4xl font-bold text-gray-800 text-center mb-8">Work Planner Tim</h1>
+
+        <div class="bg-gray-50 p-6 rounded-xl shadow-inner mb-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tambahkan Tugas Baru</h2>
+            <form id="task-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <label for="task" class="block text-gray-600 font-medium mb-1">Rincian Tugas</label>
+                    <input type="text" id="task" name="task" class="form-input" required>
+                </div>
+                <div>
+                    <label for="assignee" class="block text-gray-600 font-medium mb-1">Penanggung Jawab</label>
+                    <input type="text" id="assignee" name="assignee" class="form-input" required>
+                </div>
+                <div>
+                    <label for="startDate" class="block text-gray-600 font-medium mb-1">Tanggal Mulai</label>
+                    <input type="date" id="startDate" name="startDate" class="form-input" required>
+                </div>
+                <div>
+                    <label for="deadline" class="block text-gray-600 font-medium mb-1">Deadline</label>
+                    <input type="date" id="deadline" name="deadline" class="form-input" required>
+                </div>
+                <div class="lg:col-span-2">
+                    <label for="status" class="block text-gray-600 font-medium mb-1">Status</label>
+                    <select id="status" name="status" class="form-select" required>
+                        <option value="Planning">Planning</option>
+                        <option value="On Progress">On Progress</option>
+                        <option value="Done">Done</option>
+                        <option value="Cancel">Cancel</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-4 mt-4 text-center">
+                    <button type="submit" class="btn btn-primary w-full md:w-auto">Simpan Tugas</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-700">Daftar Tugas</h2>
+            <button id="export-btn" class="btn btn-export flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Export ke Excel
+            </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg shadow-md">
+            <table class="w-full text-left whitespace-nowrap bg-white">
+                <thead class="table-header">
+                    <tr>
+                        <th class="rounded-tl-lg">Rincian Tugas</th>
+                        <th>Penanggung Jawab</th>
+                        <th>Tanggal Mulai</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th class="rounded-tr-lg">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="task-table-body">
+                    <!-- Data tugas akan diisi di sini oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('task-form');
+            const tableBody = document.getElementById('task-table-body');
+            const exportBtn = document.getElementById('export-btn');
+
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+            function renderTasks() {
+                tableBody.innerHTML = '';
+                if (tasks.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `<td colspan="6" class="text-center text-gray-500 py-8">Tidak ada tugas. Tambahkan yang pertama!</td>`;
+                    tableBody.appendChild(emptyRow);
+                    return;
+                }
+
+                tasks.forEach((task, index) => {
+                    const row = document.createElement('tr');
+                    row.classList.add('table-row');
+                    row.innerHTML = `
+                        <td>${task.task}</td>
+                        <td>${task.assignee}</td>
+                        <td>${task.startDate}</td>
+                        <td>${task.deadline}</td>
+                        <td>
+                            <span class="status-badge badge-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
+                        </td>
+                        <td>
+                            <button onclick="deleteTask(${index})" class="btn btn-delete text-sm">Hapus</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            window.deleteTask = function(index) {
+                if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    renderTasks();
+                }
+            };
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newTask = {
+                    task: document.getElementById('task').value,
+                    assignee: document.getElementById('assignee').value,
+                    startDate: document.getElementById('startDate').value,
+                    deadline: document.getElementById('deadline').value,
+                    status: document.getElementById('status').value
+                };
+                tasks.push(newTask);
+                saveTasks();
+                renderTasks();
+                form.reset();
+            });
+
+            exportBtn.addEventListener('click', () => {
+                const worksheet = XLSX.utils.json_to_sheet(tasks);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Rencana Kerja");
+                XLSX.writeFile(workbook, "Rencana_Kerja_Tim.xlsx");
+            });
+
+            renderTasks();
+        });
+    </script>
+</body>
+</html>
